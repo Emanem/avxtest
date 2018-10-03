@@ -73,6 +73,7 @@ int main(int argc, char *argv[]) {
 		// run perf
 		const size_t	VEC_LENGTH = 1024*1024;
 		std::cout << "perf::VectorSum_run<AVX::VectorSum>" << '\t' << perf::VectorSum_run(VEC_LENGTH, AVX::VectorSum) << std::endl;
+		std::cout << "perf::VectorSum_run<AVX::VectorSumX>" << '\t' << perf::VectorSum_run(VEC_LENGTH, AVX::VectorSumX) << std::endl;
 		std::cout << "perf::VectorSum_run<base::VectorSum>" << '\t' << perf::VectorSum_run(VEC_LENGTH, base::VectorSum) << std::endl;
 	} catch(const std::exception& e) {
 		std::cerr << "Exception: " << e.what() << std::endl;

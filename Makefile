@@ -22,7 +22,7 @@ $(OBJDIR)/main.o: src/main.cpp $(OBJDIR)/__setup_obj_dir
 	$(CPPC) $(FLAGS) src/main.cpp -c -o $@
 
 $(OBJDIR)/avx.o: src/avx.cpp src/avx.h $(OBJDIR)/__setup_obj_dir
-	$(CPPC) $(FLAGS) src/avx.cpp -mavx -c -o $@ && objdump -S -M intel -l $@ > $@.asm
+	$(CPPC) $(FLAGS) src/avx.cpp -mavx -mno-avx256-split-unaligned-load -mno-avx256-split-unaligned-store -c -o $@ && objdump -S -M intel -l $@ > $@.asm
 
 $(OBJDIR)/__setup_obj_dir :
 	mkdir -p $(OBJDIR)

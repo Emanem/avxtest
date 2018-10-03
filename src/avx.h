@@ -21,6 +21,7 @@
 
 namespace AVX {
 	extern void VectorSum(double* vInOut, const double* v2, const size_t sz);
+	extern void VectorSumX(double* vInOut, const double* v2, const size_t sz);
 }
 
 // I don't seem to be able to have gcc 7.3 'link' the intrinsic

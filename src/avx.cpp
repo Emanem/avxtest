@@ -23,7 +23,7 @@ void AVX::VectorSum(double* vInOut, const double* v2, const size_t sz) {
 	// simple, we shoudl use ymm0 and ymm1 registers
 	const size_t	n_loops = sz/4,
 	      		n_remainder = sz - n_loops*4;
-	// just to have variables on the tsack...
+	// just to have variables on the stack...
 	// this should be useless though because registers
 	// should be used intead
 	{
@@ -66,6 +66,94 @@ void AVX::VectorSum(double* vInOut, const double* v2, const size_t sz) {
 	_mm256_maskstore_pd(vInOut + n_loops*4, mask, d1);
 }
 
+void AVX::VectorSumX(double* vInOut, const double* v2, const size_t sz) {
+	// simple, we shoudl use ymm0, ymm1, ymm2
+	// and ymm3 registers
+	const size_t	n_loops = sz/8,
+	      		n_remainder = sz - n_loops*8;
+	// just to have variables on the stack...
+	// this should be useless though because registers
+	// should be used intead
+	{
+		__m256d	d1,
+			d2,
+			d3,
+			d4;
+		for(size_t i = 0; i < n_loops; ++i) {
+			// load
+			d1 = _mm256_loadu_pd(vInOut + i*8);
+			d2 = _mm256_loadu_pd(v2 + i*8);
+			d3 = _mm256_loadu_pd(vInOut + i*8 + 4);
+			d4 = _mm256_loadu_pd(v2 + i*8 + 4);
+			// sum
+			d1 = _mm256_add_pd(d1, d2);
+			d3 = _mm256_add_pd(d3, d4);
+			// write back
+			_mm256_storeu_pd(vInOut + i*8, d1);
+			_mm256_storeu_pd(vInOut + i*8 + 4, d3);
+		}
+	}
+	// pointers to last remainder of the vector
+	double		*vInOutLast = &vInOut[n_loops*8];
+	const double	*v2Last = &v2[n_loops*8];
+	// simple lambda to sum last bit of the vectors
+	auto		fn_sumLast = [&](void) -> void {
+		__m256d	d1,
+			d2;
+		// load
+		d1 = _mm256_loadu_pd(vInOutLast);
+		d2 = _mm256_loadu_pd(v2Last);
+		// sum
+		d1 = _mm256_add_pd(d1, d2);
+		// write back
+		_mm256_storeu_pd(vInOutLast, d1);
+		// we need to increment the pointers
+		vInOutLast += 4;
+		v2Last += 4;
+	};
+	// create mask - remember memory order on these
+	// instruction is reverse
+	__m256i	mask;
+	switch(n_remainder) {
+		case 0:
+			return;
+		case 1:
+			mask = _mm256_set_epi32(0, 0, 0, 0, 0, 0, -1, -1);
+			break;
+		case 2:
+			mask = _mm256_set_epi32(0, 0, 0, 0, -1, -1, -1, -1);
+			break;
+		case 3:
+			mask = _mm256_set_epi32(0, 0, -1, -1, -1, -1, -1, -1);
+			break;
+		case 4:
+			fn_sumLast();
+			return;
+		case 5:
+			fn_sumLast();
+			mask = _mm256_set_epi32(0, 0, 0, 0, 0, 0, -1, -1);
+			break;
+		case 6:
+			fn_sumLast();
+			mask = _mm256_set_epi32(0, 0, 0, 0, -1, -1, -1, -1);
+			break;
+		case 7:
+			fn_sumLast();
+			mask = _mm256_set_epi32(0, 0, -1, -1, -1, -1, -1, -1);
+			break;
+		default:
+			throw std::runtime_error("Fatal: remainder of vector%8 is greater than 7 or lesser than 0!");
+	}
+	// now to load and save with masks..
+	__m256d	d1 = _mm256_maskload_pd(vInOutLast, mask),
+		d2 = _mm256_maskload_pd(v2Last, mask);
+	// sum
+	d1 = _mm256_add_pd(d1, d2);
+	// write back
+	_mm256_maskstore_pd(vInOutLast, mask, d1);
+}
+
+
 // I don't seem to be able to have gcc 7.3 'link' the intrinsic
 // AVX2 functions even when I specify the -mavx2 flag...
 /*
@@ -73,7 +161,7 @@ void AVX2::VectorSum(double* vInOut, const double* v2, const size_t sz) {
 	// simple, we shoudl use ymm0 and ymm1 registers
 	const size_t	n_loops = sz/8,
 	      		n_remainder = sz - n_loops*8;
-	// just to have variables on the tsack...
+	// just to have variables on the stack...
 	// this should be useless though because registers
 	// should be used intead
 	{
