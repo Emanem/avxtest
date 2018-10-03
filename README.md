@@ -8,8 +8,11 @@ It does consist of a simple test and a performance micro benchmark (a function c
 ## How to build
 Simply run:
 > make
+
 or
 > make release
+
 to compile and then
 > ./avxtest
+
 to run the test and performance simple micro benchmark.
